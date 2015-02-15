@@ -44,11 +44,10 @@ func fetchContent() (Articles, error) {
 	url := fmt.Sprintf("http://api.nytimes.com/svc/news/v3/content/all/all.json?api-key=%s", os.Getenv("NYTIME_API_KEY"))
 
 	res, err := http.Get(url)
-	defer res.Body.Close()
-
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	r := &struct {
 		Articles Articles `json:"results"`
