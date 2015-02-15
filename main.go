@@ -8,8 +8,6 @@ import (
 	"os"
 	"sort"
 	"time"
-
-	"github.com/ant0ine/go-json-rest/rest"
 )
 
 type Article struct {
@@ -60,8 +58,9 @@ func fetchContent() (Articles, error) {
 	return r.Articles, err
 }
 
-func StreamTheNYT(w rest.ResponseWriter, r *rest.Request) {
+func StreamHandler(res http.ResponseWriter, req *http.Request) {
 	last := Article{}
+	enc := json.NewEncoder(res)
 
 	for {
 		articles, err := fetchContent()
@@ -82,10 +81,8 @@ func StreamTheNYT(w rest.ResponseWriter, r *rest.Request) {
 			last = results[0]
 			sort.Sort(sort.Reverse(results))
 			for _, e := range results {
-				w.WriteJson(e)
+				enc.Encode(e)
 			}
-			w.(http.ResponseWriter).Write([]byte("\n"))
-			w.(http.Flusher).Flush()
 		}
 
 		time.Sleep(time.Duration(30) * time.Second)
@@ -93,15 +90,6 @@ func StreamTheNYT(w rest.ResponseWriter, r *rest.Request) {
 }
 
 func main() {
-	api := rest.NewApi()
-	api.Use(&rest.AccessLogApacheMiddleware{})
-	api.Use(rest.DefaultCommonStack...)
-	router, err := rest.MakeRouter(
-		&rest.Route{"GET", "/stream", StreamTheNYT},
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-	api.SetApp(router)
-	log.Fatal(http.ListenAndServe(":8080", api.MakeHandler()))
+	http.HandleFunc("/stream", StreamHandler)
+	http.ListenAndServe(":8080", nil)
 }
